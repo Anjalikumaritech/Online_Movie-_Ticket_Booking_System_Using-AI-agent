@@ -1,0 +1,4731 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Agentic Cinema — AI Auto-Book</title>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #070811;
+      --panel: #0f1721;
+      --muted: #9aa4b2;
+      --accent: #ff4d5a;
+      --accent-light: #ffafc0;
+      --glass: rgba(255, 255, 255, 0.03);
+      --text: #e6eef6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(
+          1200px 600px at 10% 10%,
+          rgba(255, 77, 90, 0.04),
+          transparent 8%
+        ),
+        linear-gradient(
+          180deg,
+          #08080b 0%,
+          #061018 100%
+        );
+
+      color: var(--text);
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    /* =========================
+       MAIN LAYOUT
+    ========================= */
+
+    .wrap {
+      max-width: 1180px;
+      margin: 28px auto;
+      padding: 20px;
+
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 20px;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    header {
+      grid-column: 1 / -1;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 8px 4px 18px;
+
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 54px;
+      height: 54px;
+
+      flex-shrink: 0;
+
+      border-radius: 10px;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--accent),
+          var(--accent-light)
+        );
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-weight: 800;
+      font-size: 18px;
+
+      color: #fff;
+
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .backend-status {
+      white-space: nowrap;
+    }
+
+    /* =========================
+       MOVIES
+    ========================= */
+
+    .movies {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          auto-fill,
+          minmax(220px, 1fr)
+        );
+
+      gap: 18px;
+
+      padding-bottom: 20px;
+    }
+
+    .card {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(0, 0, 0, 0.12)
+        );
+
+      border-radius: 12px;
+
+      padding: 12px;
+
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.6);
+
+      transition:
+        transform 0.18s,
+        box-shadow 0.18s;
+
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+
+      box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.7);
+    }
+
+    .poster {
+      width: 100%;
+      height: 220px;
+
+      object-fit: cover;
+
+      border-radius: 8px;
+
+      display: block;
+
+      background: #111;
+    }
+
+    .meta {
+      padding: 10px 4px;
+    }
+
+    .meta h3 {
+      margin: 0;
+
+      font-size: 16px;
+
+      color: #fff;
+    }
+
+    .meta p {
+      margin: 6px 0 0 0;
+
+      color: var(--muted);
+
+      font-size: 13px;
+
+      min-height: 36px;
+
+      overflow: hidden;
+
+      line-height: 1.4;
+    }
+
+    .actions {
+      margin-top: 10px;
+
+      display: flex;
+
+      gap: 8px;
+
+      align-items: center;
+    }
+
+    /* =========================
+       BUTTONS
+    ========================= */
+
+    .btn {
+      background: var(--accent);
+
+      border: none;
+
+      color: #fff;
+
+      padding: 8px 12px;
+
+      border-radius: 10px;
+
+      font-weight: 600;
+
+      cursor: pointer;
+
+      transition: 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+
+      filter: brightness(1.08);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+
+      cursor: not-allowed;
+
+      transform: none;
+    }
+
+    .btn.secondary {
+      background: transparent;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+      color: var(--muted);
+    }
+
+    .btn.secondary:hover {
+      color: #fff;
+
+      border-color:
+        rgba(255, 255, 255, 0.18);
+    }
+
+    /* =========================
+       RIGHT PANEL
+    ========================= */
+
+    .panel {
+      background:
+        linear-gradient(
+          180deg,
+          #071021 0%,
+          #0b1220 100%
+        );
+
+      border-radius: 12px;
+
+      padding: 16px;
+
+      height: calc(100vh - 120px);
+
+      min-height: 650px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 12px;
+
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.6);
+
+      position: sticky;
+
+      top: 20px;
+    }
+
+    .section-title {
+      font-size: 13px;
+
+      color: var(--muted);
+
+      display: flex;
+
+      justify-content: space-between;
+
+      gap: 10px;
+    }
+
+    .summary {
+      flex: 0 0 auto;
+    }
+
+    .muted {
+      color: var(--muted);
+
+      font-size: 13px;
+    }
+
+    .price {
+      font-weight: 700;
+
+      font-size: 18px;
+    }
+
+    /* =========================
+       CHAT
+    ========================= */
+
+    .chatbox {
+      background:
+        linear-gradient(
+          180deg,
+          #071021,
+          #071021
+        );
+
+      border-radius: 8px;
+
+      padding: 10px;
+
+      flex: 1;
+
+      min-height: 300px;
+
+      display: flex;
+
+      flex-direction: column;
+    }
+
+    .chat-log {
+      flex: 1;
+
+      overflow-y: auto;
+
+      padding: 8px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 8px;
+    }
+
+    .bubble {
+      max-width: 85%;
+
+      padding: 10px;
+
+      border-radius: 12px;
+
+      line-height: 1.4;
+
+      font-size: 13px;
+
+      word-wrap: break-word;
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--accent),
+          #ff8aa6
+        );
+
+      color: white;
+    }
+
+    .bubble.agent {
+      align-self: flex-start;
+
+      background: #11161b;
+
+      color: #cfe6ff;
+    }
+
+    .chat-input {
+      display: flex;
+
+      gap: 8px;
+
+      padding-top: 8px;
+    }
+
+    .chat-input input {
+      flex: 1;
+
+      min-width: 0;
+
+      padding: 10px;
+
+      border-radius: 10px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.06);
+
+      background: rgba(0, 0, 0, 0.2);
+
+      color: #e6eef6;
+
+      outline: none;
+    }
+
+    .chat-input input:focus {
+      border-color: var(--accent);
+    }
+
+    .chat-input button {
+      padding: 10px 12px;
+
+      border-radius: 10px;
+
+      border: none;
+
+      background: var(--accent);
+
+      color: #fff;
+
+      cursor: pointer;
+
+      font-weight: 600;
+    }
+
+    /* =========================
+       SEARCH
+    ========================= */
+
+    .search-input {
+      background: transparent;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.06);
+
+      padding: 8px;
+
+      border-radius: 8px;
+
+      color: #e6eef6;
+
+      outline: none;
+
+      min-width: 180px;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* =========================
+       SEAT MAP
+    ========================= */
+
+    .seat-map {
+      background: var(--glass);
+
+      padding: 12px;
+
+      border-radius: 8px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 8px;
+
+      align-items: flex-start;
+    }
+
+    .row {
+      display: flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      width: 100%;
+    }
+
+    .row-label {
+      width: 28px;
+
+      color: var(--muted);
+
+      flex-shrink: 0;
+
+      font-weight: 600;
+    }
+
+    .seat {
+      width: 36px;
+
+      height: 36px;
+
+      border-radius: 8px;
+
+      border: none;
+
+      background: #0b1220;
+
+      color: #cfe6ff;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.6);
+
+      transition: 0.15s ease;
+    }
+
+    .seat:hover:not(.taken) {
+      transform: translateY(-2px);
+
+      background: #162033;
+    }
+
+    .seat.taken {
+      background: #2b2f36;
+
+      color: #8d97a6;
+
+      cursor: not-allowed;
+
+      opacity: 0.75;
+    }
+
+    .seat.sel {
+      background:
+        linear-gradient(
+          90deg,
+          var(--accent),
+          var(--accent-light)
+        );
+
+      color: #fff;
+
+      box-shadow:
+        0 8px 22px
+        rgba(255, 77, 90, 0.15);
+    }
+
+    .screen {
+      width: 80%;
+
+      margin: 15px auto 20px;
+
+      padding: 8px;
+
+      text-align: center;
+
+      border-radius: 50%;
+
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255,255,255,0.15),
+          rgba(255,255,255,0.02)
+        );
+
+      color: #ddd;
+
+      font-size: 11px;
+
+      letter-spacing: 3px;
+    }
+
+    /* =========================
+       MODAL
+    ========================= */
+
+    .modal-bg {
+      position: fixed;
+
+      inset: 0;
+
+      background:
+        rgba(2, 6, 12, 0.78);
+
+      display: none;
+
+      align-items: center;
+
+      justify-content: center;
+
+      z-index: 70;
+
+      padding: 20px;
+    }
+
+    .modal {
+      background:
+        linear-gradient(
+          180deg,
+          #0b1220,
+          #071021
+        );
+
+      padding: 18px;
+
+      border-radius: 12px;
+
+      max-width: 760px;
+
+      width: 94%;
+
+      max-height: 90vh;
+
+      overflow-y: auto;
+
+      color: #e6eef6;
+
+      box-shadow:
+        0 16px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    /* =========================
+       LOADING
+    ========================= */
+
+    .loading {
+      padding: 40px;
+
+      text-align: center;
+
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 40px;
+
+      text-align: center;
+
+      color: var(--muted);
+
+      grid-column: 1 / -1;
+    }
+
+    /* =========================
+       FOOTER
+    ========================= */
+
+    footer {
+      grid-column: 1 / -1;
+
+      text-align: center;
+
+      color: var(--muted);
+
+      margin-top: 8px;
+
+      font-size: 13px;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 980px) {
+      .wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        position: static;
+
+        height: auto;
+
+        min-height: 700px;
+      }
+
+      header {
+        flex-direction: column;
+
+        align-items: flex-start;
+      }
+
+      .backend-status {
+        white-space: normal;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .wrap {
+        margin: 10px auto;
+
+        padding: 12px;
+      }
+
+      .movies {
+        grid-template-columns: 1fr;
+      }
+
+      .search-input {
+        min-width: 0;
+
+        width: 100%;
+      }
+
+      .actions {
+        flex-wrap: wrap;
+      }
+
+      .row {
+        overflow-x: auto;
+
+        padding-bottom: 3px;
+      }
+
+      .seat {
+        flex-shrink: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+
+    <header>
+
+      <div class="brand">
+
+        <div class="logo">
+          AC
+        </div>
+
+        <div>
+
+          <h1>
+            Agentic Cinema
+          </h1>
+
+          <div class="subtitle">
+            Tell the AI to auto-book — try:
+            "Book 2 tickets for Inception tonight at 7pm"
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="muted backend-status">
+
+        Backend:
+        <code>http://localhost:8000</code>
+
+      </div>
+
+    </header>
+
+
+    <!-- =========================
+         MAIN MOVIE SECTION
+    ========================== -->
+
+    <main>
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-bottom:12px;
+          gap:12px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <div>
+
+          <strong style="font-size:18px">
+            Latest Movies
+          </strong>
+
+          <div class="muted">
+            From backend /movies
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+          "
+        >
+
+          <input
+            id="quickSearch"
+            class="search-input"
+            placeholder="Search movies..."
+            oninput="filterMovies()"
+          />
+
+          <button
+            class="btn"
+            onclick="openAgentFocus()"
+          >
+            Chat with AI
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- Movie Cards -->
+
+      <div
+        class="movies"
+        id="movieGrid"
+      >
+
+        <div class="loading">
+          Loading movies...
+        </div>
+
+      </div>
+
+    </main>
+
+
+    <!-- =========================
+         RIGHT SIDEBAR
+    ========================== -->
+
+    <aside class="panel">
+
+
+      <!-- BOOKING SUMMARY -->
+
+      <div>
+
+        <div class="section-title">
+
+          <div>
+            Booking Summary
+          </div>
+
+          <div class="muted">
+            Auto-updates
+          </div>
+
+        </div>
+
+
+        <div class="summary">
+
+          <!-- Movie -->
+
+          <div style="margin-top:12px">
+
+            <div class="muted">
+              Selected Movie
+            </div>
+
+            <div
+              id="sumMovie"
+              style="font-weight:700"
+            >
+              —
+            </div>
+
+          </div>
+
+
+          <!-- Showtime -->
+
+          <div
+            style="margin-top:10px"
+            class="muted"
+          >
+            Showtime
+          </div>
+
+          <div
+            id="sumShow"
+            class="muted"
+          >
+            —
+          </div>
+
+
+          <!-- Seats -->
+
+          <div
+            style="margin-top:10px"
+            class="muted"
+          >
+            Seats
+          </div>
+
+          <div id="sumSeats">
+            —
+          </div>
+
+
+          <!-- Total -->
+
+          <div
+            style="
+              margin-top:12px;
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+            "
+          >
+
+            <div class="muted">
+              Total
+            </div>
+
+            <div
+              class="price"
+              id="sumTotal"
+            >
+              $0.00
+            </div>
+
+          </div>
+
+
+          <!-- Buttons -->
+
+          <div
+            style="
+              margin-top:12px;
+              display:flex;
+              gap:8px;
+            "
+          >
+
+            <button
+              class="btn secondary"
+              id="openSeatBtn"
+              onclick="openSeatModal()"
+              disabled
+            >
+              Choose Seats
+            </button>
+
+            <button
+              class="btn"
+              id="oneClickBtn"
+              onclick="oneClickBook()"
+              disabled
+            >
+              One-click Book
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           AI CHAT
+      ========================== -->
+
+      <div
+        style="
+          flex:1;
+          display:flex;
+          flex-direction:column;
+        "
+      >
+
+        <div class="section-title">
+
+          <div>
+            Agentic AI
+          </div>
+
+          <div class="muted">
+            Auto-book or ask
+          </div>
+
+        </div>
+
+
+        <div class="chatbox">
+
+          <div
+            class="chat-log"
+            id="chatLog"
+          >
+          </div>
+
+
+          <div class="chat-input">
+
+            <input
+              id="chatInput"
+              placeholder='E.g. "Book 2 tickets for Joker tonight at 7pm"'
+              onkeydown="
+                if(event.key === 'Enter'){
+                  sendChat();
+                }
+              "
+            />
+
+            <button
+              onclick="sendChat()"
+            >
+              Send
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
+    <footer>
+
+      © Agentic Cinema —
+      mock payments • demo only
+
+    </footer>
+
+  </div>
+
+
+  <!-- =========================
+       SEAT MODAL
+  ========================== -->
+
+  <div
+    class="modal-bg"
+    id="seatModalBg"
+  >
+
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+    >
+
+
+      <!-- Modal Header -->
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-bottom:8px;
+          gap:20px;
+        "
+      >
+
+        <div>
+
+          <div class="muted">
+            Booking for
+          </div>
+
+          <div
+            id="modalMovie"
+            style="font-weight:700"
+          >
+          </div>
+
+          <div
+            id="modalShow"
+            class="muted"
+          >
+          </div>
+
+        </div>
+
+
+        <div style="text-align:right">
+
+          <div class="muted">
+            Price per ticket
+          </div>
+
+          <div
+            id="modalPrice"
+            style="font-weight:700"
+          >
+            $0.00
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Screen -->
+
+      <div class="screen">
+        SCREEN
+      </div>
+
+
+      <!-- Seats -->
+
+      <div
+        id="modalSeatMap"
+        style="
+          max-height:360px;
+          overflow:auto;
+        "
+      >
+      </div>
+
+
+      <!-- Modal Footer -->
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-top:12px;
+          gap:15px;
+        "
+      >
+
+        <div>
+
+          <div class="muted">
+            Selected
+          </div>
+
+          <div
+            id="modalSelected"
+            style="font-weight:700"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            display:flex;
+            gap:8px;
+          "
+        >
+
+          <button
+            class="btn secondary"
+            onclick="closeSeatModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="btn"
+            id="reserveNowBtn"
+            onclick="reserveNow()"
+          >
+            Reserve & Pay
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       JAVASCRIPT
+  ========================================================== -->
+
+  <script>
+
+    /* =========================================================
+       CONFIG
+    ========================================================== */
+
+    const API = "http://localhost:8000";
+
+
+    /* =========================================================
+       GLOBAL DATA
+    ========================================================== */
+
+    let MOVIES = [];
+
+    let SHOWTIMES = [];
+
+    let SEATS_CACHE = {};
+
+
+    let state = {
+
+      selectedMovie: null,
+
+      selectedShowtime: null,
+
+      selectedSeats: new Set(),
+
+      pricePerTicket: 0
+
+    };
+
+
+    let lastBooking = null;
+
+
+    /* =========================================================
+       HELPER FUNCTIONS
+    ========================================================== */
+
+    function $id(id) {
+
+      return document.getElementById(id);
+
+    }
+
+
+    function fmtMoney(value) {
+
+      return "$" +
+        Number(value || 0)
+          .toFixed(2);
+
+    }
+
+
+    function sleep(ms) {
+
+      return new Promise(
+        resolve => setTimeout(resolve, ms)
+      );
+
+    }
+
+
+    function escapeHtml(value) {
+
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    }
+
+
+    /* =========================================================
+       INITIALIZATION
+    ========================================================== */
+
+    async function init() {
+
+      appendAgentMessage(
+        "Loading Agentic Cinema...",
+        "agent"
+      );
+
+
+      await loadMovies();
+
+      await loadShowtimes();
+
+
+      renderMovies();
+
+
+      $id("chatLog").innerHTML = "";
+
+
+      appendAgentMessage(
+        'Hello! I\'m Agentic AI — say something like: "Book 2 tickets for Inception at 7pm".',
+        "agent"
+      );
+
+    }
+
+
+    init();
+
+
+    /* =========================================================
+       LOAD MOVIES
+    ========================================================== */
+
+    async function loadMovies() {
+
+      try {
+
+        const response =
+          await fetch(API + "/movies");
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "HTTP " + response.status
+          );
+
+        }
+
+
+        const data =
+          await response.json();
+
+
+        MOVIES =
+          Array.isArray(data)
+            ? data
+            : [];
+
+
+      } catch (error) {
+
+        console.error(
+          "loadMovies:",
+          error
+        );
+
+
+        MOVIES = [];
+
+
+        appendAgentMessage(
+          "Unable to load movies from backend. Make sure the backend is running on http://localhost:8000.",
+          "agent"
+        );
+
+      }
+
+    }
+
+
+    /* =========================================================
+       LOAD SHOWTIMES
+    ========================================================== */
+
+    async function loadShowtimes() {
+
+      try {
+
+        const response =
+          await fetch(API + "/showtimes");
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "HTTP " + response.status
+          );
+
+        }
+
+
+        const data =
+          await response.json();
+
+
+        SHOWTIMES =
+          Array.isArray(data)
+            ? data
+            : [];
+
+
+      } catch (error) {
+
+        console.error(
+          "loadShowtimes:",
+          error
+        );
+
+
+        SHOWTIMES = [];
+
+      }
+
+    }
+
+
+    /* =========================================================
+       RENDER MOVIES
+    ========================================================== */
+
+    function renderMovies(filter = "") {
+
+      const grid =
+        $id("movieGrid");
+
+
+      grid.innerHTML = "";
+
+
+      const query =
+        String(filter || "")
+          .trim()
+          .toLowerCase();
+
+
+      const filteredMovies =
+        MOVIES.filter(movie => {
+
+          const title =
+            String(movie.title || "")
+              .toLowerCase();
+
+
+          const description =
+            String(movie.description || "")
+              .toLowerCase();
+
+
+          return (
+            !query ||
+            title.includes(query) ||
+            description.includes(query)
+          );
+
+        });
+
+
+      if (!filteredMovies.length) {
+
+        grid.innerHTML = `
+          <div class="empty">
+            No movies found.
+          </div>
+        `;
+
+        return;
+
+      }
+
+
+      filteredMovies.forEach(movie => {
+
+        const card =
+          document.createElement("div");
+
+
+        card.className = "card";
+
+
+        const title =
+          escapeHtml(movie.title);
+
+
+        const description =
+          escapeHtml(
+            movie.description || ""
+          );
+
+
+        /*
+          Using picsum as the original
+          uploaded project does.
+        */
+
+        const poster =
+          "https://picsum.photos/seed/" +
+          encodeURIComponent(
+            movie.title || movie.id
+          ) +
+          "/640/420";
+
+
+        card.innerHTML = `
+
+          <img
+            class="poster"
+            src="${poster}"
+            alt="${title}"
+            loading="lazy"
+          >
+
+          <div class="meta">
+
+            <h3>
+              ${title}
+            </h3>
+
+            <p>
+              ${description}
+            </p>
+
+            <div class="actions">
+
+              <button
+                class="btn"
+                onclick="startBooking(${Number(movie.id)})"
+              >
+                Book
+              </button>
+
+              <button
+                class="btn secondary"
+                onclick="showTimes(${Number(movie.id)})"
+              >
+                Showtimes
+              </button>
+
+            </div>
+
+          </div>
+
+        `;
+
+
+        grid.appendChild(card);
+
+      });
+
+    }
+
+
+    /* =========================================================
+       SEARCH
+    ========================================================== */
+
+    function filterMovies() {
+
+      const search =
+        $id("quickSearch").value;
+
+
+      renderMovies(search);
+
+    }
+
+
+    /* =========================================================
+       SHOWTIMES
+    ========================================================== */
+
+    function showTimes(movieId) {
+
+      const showtimes =
+        SHOWTIMES.filter(
+          show =>
+            Number(show.movie_id) ===
+            Number(movieId)
+        );
+
+
+      if (!showtimes.length) {
+
+        alert(
+          "No showtimes found for this movie."
+        );
+
+        return;
+
+      }
+
+
+      startBooking(movieId);
+
+    }
+
+
+    /* =========================================================
+       START BOOKING
+    ========================================================== */
+
+    function startBooking(movieId) {
+
+      const movie =
+        MOVIES.find(
+          item =>
+            Number(item.id) ===
+            Number(movieId)
+        );
+
+
+      if (!movie) {
+
+        alert(
+          "Movie not found."
+        );
+
+        return;
+
+      }
+
+
+      const showtimes =
+        SHOWTIMES.filter(
+          show =>
+            Number(show.movie_id) ===
+            Number(movieId)
+        );
+
+
+      if (!showtimes.length) {
+
+        alert(
+          "No showtime configured for this movie."
+        );
+
+        return;
+
+      }
+
+
+      /*
+        Select first available showtime
+        just like the original code.
+      */
+
+      const showtime =
+        showtimes[0];
+
+
+      setSelectedMovie(
+        movie,
+        showtime
+      );
+
+
+      openSeatModal();
+
+    }
+
+
+    /* =========================================================
+       SET SELECTED MOVIE
+    ========================================================== */
+
+    function setSelectedMovie(
+      movie,
+      showtime
+    ) {
+
+      state.selectedMovie =
+        movie;
+
+
+      state.selectedShowtime =
+        showtime;
+
+
+      state.pricePerTicket =
+        parseFloat(
+          showtime.price || 0
+        );
+
+
+      state.selectedSeats =
+        new Set();
+
+
+      updateSummary();
+
+    }
+
+
+    /* =========================================================
+       UPDATE BOOKING SUMMARY
+    ========================================================== */
+
+    function updateSummary() {
+
+      $id("sumMovie").innerText =
+        state.selectedMovie
+          ? state.selectedMovie.title
+          : "—";
+
+
+      if (state.selectedShowtime) {
+
+        const date =
+          new Date(
+            state.selectedShowtime.start_time
+          );
+
+
+        $id("sumShow").innerText =
+          isNaN(date.getTime())
+            ? String(
+                state.selectedShowtime.start_time
+              )
+            : date.toLocaleString();
+
+      } else {
+
+        $id("sumShow").innerText =
+          "—";
+
+      }
+
+
+      /*
+        Convert selected seat IDs
+        into readable seat names.
+      */
+
+      const readableSeats =
+        getSelectedSeatLabels();
+
+
+      $id("sumSeats").innerText =
+        readableSeats.length
+          ? readableSeats.join(", ")
+          : "—";
+
+
+      const total =
+        state.selectedSeats.size *
+        (state.pricePerTicket || 0);
+
+
+      $id("sumTotal").innerText =
+        fmtMoney(total);
+
+
+      $id("openSeatBtn").disabled =
+        !state.selectedShowtime;
+
+
+      $id("oneClickBtn").disabled =
+        !state.selectedShowtime;
+
+    }
+
+
+    /* =========================================================
+       GET SELECTED SEAT LABELS
+    ========================================================== */
+
+    function getSelectedSeatLabels() {
+
+      if (
+        !state.selectedShowtime ||
+        state.selectedSeats.size === 0
+      ) {
+
+        return [];
+
+      }
+
+
+      const seats =
+        SEATS_CACHE[
+          state.selectedShowtime.id
+        ] || [];
+
+
+      return Array.from(
+        state.selectedSeats
+      ).map(id => {
+
+        const seat =
+          seats.find(
+            item =>
+              Number(item.id) ===
+              Number(id)
+          );
+
+
+        if (!seat) {
+
+          return String(id);
+
+        }
+
+
+        return (
+          String(seat.seat_row || "") +
+          String(seat.seat_number || "")
+        );
+
+      });
+
+    }
+
+
+    /* =========================================================
+       OPEN SEAT MODAL
+    ========================================================== */
+
+    async function openSeatModal() {
+
+      if (!state.selectedShowtime) {
+
+        if (!state.selectedMovie) {
+
+          alert(
+            "Choose a movie first."
+          );
+
+          return;
+
+        }
+
+
+        const showtimes =
+          SHOWTIMES.filter(
+            show =>
+              Number(show.movie_id) ===
+              Number(state.selectedMovie.id)
+          );
+
+
+        if (!showtimes.length) {
+
+          alert(
+            "No showtime available."
+          );
+
+          return;
+
+        }
+
+
+        state.selectedShowtime =
+          showtimes[0];
+
+
+        state.pricePerTicket =
+          parseFloat(
+            state.selectedShowtime.price || 0
+          );
+
+      }
+
+
+      const showtimeId =
+        state.selectedShowtime.id;
+
+
+      /*
+        Load seats only once
+        and cache them.
+      */
+
+      if (!SEATS_CACHE[showtimeId]) {
+
+        try {
+
+          const response =
+            await fetch(
+              `${API}/seats/${showtimeId}`
+            );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "HTTP " + response.status
+            );
+
+          }
+
+
+          const seats =
+            await response.json();
+
+
+          SEATS_CACHE[showtimeId] =
+            Array.isArray(seats)
+              ? seats
+              : [];
+
+
+        } catch (error) {
+
+          console.error(
+            "load seats:",
+            error
+          );
+
+
+          SEATS_CACHE[showtimeId] =
+            [];
+
+
+          alert(
+            "Unable to load seats."
+          );
+
+        }
+
+      }
+
+
+      $id("modalMovie").innerText =
+        state.selectedMovie
+          ? state.selectedMovie.title
+          : "—";
+
+
+      const date =
+        new Date(
+          state.selectedShowtime.start_time
+        );
+
+
+      $id("modalShow").innerText =
+        isNaN(date.getTime())
+          ? String(
+              state.selectedShowtime.start_time
+            )
+          : date.toLocaleString();
+
+
+      $id("modalPrice").innerText =
+        fmtMoney(
+          state.pricePerTicket
+        );
+
+
+      renderSeatMap(
+        SEATS_CACHE[showtimeId]
+      );
+
+
+      $id("seatModalBg").style.display =
+        "flex";
+
+
+      updateSummary();
+
+    }
+
+
+    /* =========================================================
+       RENDER SEAT MAP
+    ========================================================== */
+
+    function renderSeatMap(seats) {
+
+      const container =
+        $id("modalSeatMap");
+
+
+      container.innerHTML = "";
+
+
+      if (!Array.isArray(seats) || !seats.length) {
+
+        container.innerHTML = `
+          <div class="empty">
+            No seats available for this show.
+          </div>
+        `;
+
+        $id("modalSelected").innerText =
+          "—";
+
+        return;
+
+      }
+
+
+      const rows = {};
+
+
+      seats.forEach(seat => {
+
+        const row =
+          String(
+            seat.seat_row || "A"
+          );
+
+
+        if (!rows[row]) {
+
+          rows[row] = [];
+
+        }
+
+
+        rows[row].push(seat);
+
+      });
+
+
+      Object.keys(rows)
+        .sort()
+        .forEach(rowName => {
+
+          const rowDiv =
+            document.createElement("div");
+
+
+          rowDiv.className =
+            "row";
+
+
+          const label =
+            document.createElement("div");
+
+
+          label.className =
+            "row-label";
+
+
+          label.innerText =
+            rowName;
+
+
+          rowDiv.appendChild(label);
+
+
+          const seatWrap =
+            document.createElement("div");
+
+
+          seatWrap.style.display =
+            "flex";
+
+
+          seatWrap.style.flexWrap =
+            "wrap";
+
+
+          seatWrap.style.gap =
+            "8px";
+
+
+          rows[rowName]
+            .sort(
+              (a, b) =>
+                Number(a.seat_number) -
+                Number(b.seat_number)
+            )
+            .forEach(seat => {
+
+              const button =
+                document.createElement("button");
+
+
+              button.type =
+                "button";
+
+
+              button.className =
+                "seat" +
+                (
+                  seat.is_reserved
+                    ? " taken"
+                    : ""
+                );
+
+
+              button.innerText =
+                seat.seat_number;
+
+
+              button.title =
+                `Seat ${rowName}${seat.seat_number}`;
+
+
+              if (
+                !seat.is_reserved &&
+                state.selectedSeats.has(
+                  seat.id
+                )
+              ) {
+
+                button.classList.add(
+                  "sel"
+                );
+
+              }
+
+
+              if (!seat.is_reserved) {
+
+                button.onclick =
+                  () => {
+
+                    toggleSeat(
+                      seat,
+                      button
+                    );
+
+                  };
+
+              } else {
+
+                button.disabled =
+                  true;
+
+              }
+
+
+              seatWrap.appendChild(
+                button
+              );
+
+            });
+
+
+          rowDiv.appendChild(
+            seatWrap
+          );
+
+
+          container.appendChild(
+            rowDiv
+          );
+
+        });
+
+
+      updateModalSelected();
+
+    }
+
+
+    /* =========================================================
+       TOGGLE SEAT
+    ========================================================== */
+
+    function toggleSeat(
+      seat,
+      button
+    ) {
+
+      if (seat.is_reserved) {
+
+        return;
+
+      }
+
+
+      if (
+        state.selectedSeats.has(
+          seat.id
+        )
+      ) {
+
+        state.selectedSeats.delete(
+          seat.id
+        );
+
+
+        button.classList.remove(
+          "sel"
+        );
+
+      } else {
+
+        state.selectedSeats.add(
+          seat.id
+        );
+
+
+        button.classList.add(
+          "sel"
+        );
+
+      }
+
+
+      updateModalSelected();
+
+      updateSummary();
+
+    }
+
+
+    /* =========================================================
+       UPDATE MODAL SELECTED SEATS
+    ========================================================== */
+
+    function updateModalSelected() {
+
+      const labels =
+        getSelectedSeatLabels();
+
+
+      $id("modalSelected").innerText =
+        labels.length
+          ? labels.join(", ")
+          : "—";
+
+    }
+
+
+    /* =========================================================
+       CLOSE SEAT MODAL
+    ========================================================== */
+
+    function closeSeatModal() {
+
+      $id("seatModalBg").style.display =
+        "none";
+
+    }
+
+
+    /* =========================================================
+       RESERVE + FINALIZE
+    ========================================================== */
+
+    async function reserveNow() {
+
+      if (!state.selectedShowtime) {
+
+        alert(
+          "Choose a showtime first."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        state.selectedSeats.size === 0
+      ) {
+
+        alert(
+          "Select at least one seat first."
+        );
+
+        return;
+
+      }
+
+
+      const seatIds =
+        Array.from(
+          state.selectedSeats
+        );
+
+
+      const seatLabels =
+        getSelectedSeatLabels();
+
+
+      appendAgentMessage(
+        `Reserving seats: ${seatLabels.join(", ")}`,
+        "agent"
+      );
+
+
+      const reserveButton =
+        $id("reserveNowBtn");
+
+
+      reserveButton.disabled =
+        true;
+
+
+      try {
+
+        /*
+          RESERVE API
+        */
+
+        const response =
+          await fetch(
+            API + "/reserve",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                showtimeId:
+                  state.selectedShowtime.id,
+
+                showtime_id:
+                  state.selectedShowtime.id,
+
+                seatIds:
+                  seatIds,
+
+                seat_ids:
+                  seatIds
+
+              })
+
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          appendAgentMessage(
+            "Reserve failed: " +
+            (
+              result.message ||
+              result.error ||
+              "Unknown error"
+            ),
+            "agent"
+          );
+
+          return;
+
+        }
+
+
+        appendAgentMessage(
+          "Seats reserved temporarily. Proceeding to mock payment...",
+          "agent"
+        );
+
+
+        /*
+          USER INFORMATION
+        */
+
+        const name =
+          prompt(
+            "Enter full name for ticket:",
+            "Guest User"
+          ) || "Guest User";
+
+
+        const email =
+          prompt(
+            "Enter email for ticket (optional):",
+            ""
+          ) || "";
+
+
+        await sleep(700);
+
+
+        /*
+          FINALIZE API
+        */
+
+        const response2 =
+          await fetch(
+            API + "/finalize",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                user_name:
+                  name,
+
+                user_email:
+                  email,
+
+                showtime_id:
+                  state.selectedShowtime.id,
+
+                showtimeId:
+                  state.selectedShowtime.id,
+
+                seat_ids:
+                  seatIds,
+
+                seatIds:
+                  seatIds
+
+              })
+
+            }
+          );
+
+
+        const result2 =
+          await response2.json();
+
+
+        if (!result2.success) {
+
+          appendAgentMessage(
+            "Finalize failed: " +
+            (
+              result2.message ||
+              result2.error ||
+              "Unknown error"
+            ),
+            "agent"
+          );
+
+          return;
+
+        }
+
+
+        /*
+          BOOKING ID
+        */
+
+        const bookingId =
+          result2.booking &&
+          result2.booking.bookingId
+            ? result2.booking.bookingId
+            : "BK" + Date.now();
+
+
+        /*
+          AMOUNT
+        */
+
+        const amount =
+          result2.booking &&
+          result2.booking.amount != null
+            ? result2.booking.amount
+            : (
+                seatIds.length *
+                (
+                  state.pricePerTicket ||
+                  0
+                )
+              );
+
+
+        /*
+          SAVE LAST BOOKING
+        */
+
+        lastBooking = {
+
+          booking: {
+
+            bookingId:
+              bookingId,
+
+            amount:
+              amount
+
+          },
+
+          name:
+            name,
+
+          email:
+            email,
+
+          movie:
+            state.selectedMovie,
+
+          showtime:
+            state.selectedShowtime,
+
+          seats:
+            seatIds,
+
+          seatLabels:
+            seatLabels
+
+        };
+
+
+        appendAgentMessage(
+          `🎉 Booking confirmed! Booking ID: ${bookingId}`,
+          "agent"
+        );
+
+
+        /*
+          MARK SEATS LOCALLY
+        */
+
+        const showtimeId =
+          state.selectedShowtime.id;
+
+
+        if (
+          SEATS_CACHE[showtimeId]
+        ) {
+
+          SEATS_CACHE[showtimeId]
+            .forEach(seat => {
+
+              if (
+                state.selectedSeats.has(
+                  seat.id
+                )
+              ) {
+
+                seat.is_reserved =
+                  true;
+
+              }
+
+            });
+
+        }
+
+
+        /*
+          CLEAR SELECTION
+        */
+
+        state.selectedSeats =
+          new Set();
+
+
+        updateSummary();
+
+
+        renderSeatMap(
+          SEATS_CACHE[showtimeId]
+        );
+
+
+        /*
+          GENERATE PDF
+        */
+
+        await generateTicketPDF();
+
+
+        appendAgentMessage(
+          "Ticket generated and downloaded successfully.",
+          "agent"
+        );
+
+
+        closeSeatModal();
+
+
+      } catch (error) {
+
+        console.error(
+          "reserveNow:",
+          error
+        );
+
+
+        appendAgentMessage(
+          "Booking error: " +
+          error.message,
+          "agent"
+        );
+
+
+      } finally {
+
+        reserveButton.disabled =
+          false;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       ONE CLICK BOOKING
+    ========================================================== */
+
+    async function oneClickBook() {
+
+      if (!state.selectedShowtime) {
+
+        alert(
+          "Select a movie/showtime first."
+        );
+
+        return;
+
+      }
+
+
+      const showtimeId =
+        state.selectedShowtime.id;
+
+
+      /*
+        Make sure seats are loaded.
+      */
+
+      if (!SEATS_CACHE[showtimeId]) {
+
+        try {
+
+          const response =
+            await fetch(
+              `${API}/seats/${showtimeId}`
+            );
+
+
+          SEATS_CACHE[showtimeId] =
+            await response.json();
+
+
+        } catch (error) {
+
+          alert(
+            "Unable to load seats."
+          );
+
+          return;
+
+        }
+
+      }
+
+
+      const seats =
+        SEATS_CACHE[showtimeId] || [];
+
+
+      const freeSeats =
+        seats.filter(
+          seat =>
+            !seat.is_reserved
+        );
+
+
+      /*
+        Original flow uses one seat.
+      */
+
+      const numberOfSeats = 1;
+
+
+      if (
+        freeSeats.length <
+        numberOfSeats
+      ) {
+
+        alert(
+          "Not enough free seats."
+        );
+
+        return;
+
+      }
+
+
+      state.selectedSeats =
+        new Set(
+          freeSeats
+            .slice(
+              0,
+              numberOfSeats
+            )
+            .map(
+              seat => seat.id
+            )
+        );
+
+
+      updateSummary();
+
+
+      await reserveNow();
+
+    }
+
+
+    /* =========================================================
+       AI COMMAND PARSER
+    ========================================================== */
+
+    function parseCommand(text) {
+
+      const command =
+        String(text || "")
+          .toLowerCase();
+
+
+      /*
+        NUMBER OF TICKETS
+      */
+
+      const seatsMatch =
+        command.match(
+          /(\d+)\s*(tickets|seats)/
+        );
+
+
+      const numSeats =
+        seatsMatch
+          ? Math.max(
+              1,
+              parseInt(
+                seatsMatch[1],
+                10
+              )
+            )
+          : 1;
+
+
+      /*
+        MOVIE MATCHING
+      */
+
+      let movie = null;
+
+
+      for (
+        const item of MOVIES
+      ) {
+
+        const title =
+          String(
+            item.title || ""
+          )
+            .toLowerCase();
+
+
+        if (
+          title &&
+          command.includes(title)
+        ) {
+
+          movie =
+            item;
+
+          break;
+
+        }
+
+      }
+
+
+      /*
+        Fallback:
+        If exact movie isn't found,
+        try matching individual words.
+      */
+
+      if (!movie) {
+
+        for (
+          const item of MOVIES
+        ) {
+
+          const titleWords =
+            String(
+              item.title || ""
+            )
+              .toLowerCase()
+              .split(
+                /\s+/
+              )
+              .filter(
+                word =>
+                  word.length > 2
+              );
+
+
+          const matchCount =
+            titleWords.filter(
+              word =>
+                command.includes(
+                  word
+                )
+            ).length;
+
+
+          if (
+            titleWords.length &&
+            matchCount ===
+            titleWords.length
+          ) {
+
+            movie =
+              item;
+
+            break;
+
+          }
+
+        }
+
+      }
+
+
+      /*
+        Original project falls back
+        to first movie.
+      */
+
+      if (
+        !movie &&
+        MOVIES.length
+      ) {
+
+        movie =
+          MOVIES[0];
+
+      }
+
+
+      /*
+        TIME
+        Examples:
+        at 7pm
+        at 7 pm
+        at 7:30pm
+      */
+
+      let preferredTime =
+        null;
+
+
+      const timeMatch =
+        command.match(
+          /at\s+(\d{1,2}(?::\d{2})?\s*(am|pm)?)/i
+        );
+
+
+      if (timeMatch) {
+
+        preferredTime =
+          timeMatch[1];
+
+      }
+
+
+      /*
+        DAY
+      */
+
+      const when = {};
+
+
+      if (
+        command.includes(
+          "tomorrow"
+        )
+      ) {
+
+        when.day =
+          "tomorrow";
+
+      } else if (
+        command.includes(
+          "tonight"
+        )
+      ) {
+
+        when.day =
+          "tonight";
+
+      }
+
+
+      /*
+        FIND SHOWTIME
+      */
+
+      let showtime = null;
+
+
+      if (movie) {
+
+        const showtimes =
+          SHOWTIMES.filter(
+            show =>
+              Number(show.movie_id) ===
+              Number(movie.id)
+          );
+
+
+        if (showtimes.length) {
+
+          if (preferredTime) {
+
+            const timeNumbers =
+              preferredTime.match(
+                /\d+/
+              );
+
+
+            const preferredHour =
+              timeNumbers
+                ? parseInt(
+                    timeNumbers[0],
+                    10
+                  )
+                : null;
+
+
+            let preferredPeriod =
+              preferredTime
+                .toLowerCase()
+                .includes("pm")
+                  ? "pm"
+                  : preferredTime
+                      .toLowerCase()
+                      .includes("am")
+                      ? "am"
+                      : null;
+
+
+            showtime =
+              showtimes.find(
+                show => {
+
+                  const date =
+                    new Date(
+                      show.start_time
+                    );
+
+
+                  if (
+                    isNaN(
+                      date.getTime()
+                    )
+                  ) {
+
+                    return false;
+
+                  }
+
+
+                  let hour =
+                    date.getHours();
+
+
+                  let displayHour =
+                    hour % 12;
+
+
+                  if (
+                    displayHour === 0
+                  ) {
+
+                    displayHour =
+                      12;
+
+                  }
+
+
+                  const period =
+                    hour >= 12
+                      ? "pm"
+                      : "am";
+
+
+                  const hourMatches =
+                    displayHour ===
+                    preferredHour;
+
+
+                  const periodMatches =
+                    !preferredPeriod ||
+                    period ===
+                    preferredPeriod;
+
+
+                  return (
+                    hourMatches &&
+                    periodMatches
+                  );
+
+                }
+              );
+
+
+            /*
+              If exact time doesn't exist,
+              use closest hour.
+            */
+
+            if (
+              !showtime &&
+              preferredHour != null
+            ) {
+
+              let best =
+                null;
+
+              let bestDifference =
+                Infinity;
+
+
+              showtimes.forEach(
+                show => {
+
+                  const date =
+                    new Date(
+                      show.start_time
+                    );
+
+
+                  if (
+                    isNaN(
+                      date.getTime()
+                    )
+                  ) {
+
+                    return;
+
+                  }
+
+
+                  let hour =
+                    date.getHours();
+
+
+                  let displayHour =
+                    hour % 12;
+
+
+                  if (
+                    displayHour === 0
+                  ) {
+
+                    displayHour =
+                      12;
+
+                  }
+
+
+                  const difference =
+                    Math.abs(
+                      displayHour -
+                      preferredHour
+                    );
+
+
+                  if (
+                    difference <
+                    bestDifference
+                  ) {
+
+                    bestDifference =
+                      difference;
+
+                    best =
+                      show;
+
+                  }
+
+                }
+              );
+
+
+              showtime =
+                best;
+
+            }
+
+          }
+
+
+          /*
+            Default showtime.
+          */
+
+          if (!showtime) {
+
+            showtime =
+              showtimes[0];
+
+          }
+
+        }
+
+      }
+
+
+      return {
+
+        movie,
+
+        showtime,
+
+        numSeats,
+
+        when
+
+      };
+
+    }
+
+
+    /* =========================================================
+       SEND AI CHAT
+    ========================================================== */
+
+    async function sendChat() {
+
+      const input =
+        $id("chatInput");
+
+
+      const text =
+        input.value.trim();
+
+
+      if (!text) {
+
+        return;
+
+      }
+
+
+      appendAgentMessage(
+        text,
+        "user"
+      );
+
+
+      input.value =
+        "";
+
+
+      const lower =
+        text.toLowerCase();
+
+
+      /*
+        AVAILABLE MOVIES COMMAND
+      */
+
+      if (
+        lower.includes(
+          "available movies"
+        ) ||
+        lower.includes(
+          "what movies"
+        ) ||
+        lower.includes(
+          "show movies"
+        ) ||
+        lower.includes(
+          "list movies"
+        )
+      ) {
+
+        appendAgentMessage(
+          "Showing available movies from backend.",
+          "agent"
+        );
+
+
+        renderMovies();
+
+
+        return;
+
+      }
+
+
+      /*
+        SHOWTIME COMMAND
+      */
+
+      if (
+        lower.includes(
+          "showtimes"
+        ) &&
+        !lower.includes(
+          "book"
+        )
+      ) {
+
+        const parsed =
+          parseCommand(text);
+
+
+        if (
+          parsed.movie
+        ) {
+
+          const showtimes =
+            SHOWTIMES.filter(
+              show =>
+                Number(
+                  show.movie_id
+                ) ===
+                Number(
+                  parsed.movie.id
+                )
+            );
+
+
+          if (
+            showtimes.length
+          ) {
+
+            const message =
+              showtimes
+                .map(
+                  show => {
+
+                    const date =
+                      new Date(
+                        show.start_time
+                      );
+
+
+                    const time =
+                      isNaN(
+                        date.getTime()
+                      )
+                        ? show.start_time
+                        : date.toLocaleString();
+
+
+                    return `
+                      ${time}
+                      — ${fmtMoney(show.price)}
+                    `;
+
+                  }
+                )
+                .join("<br>");
+
+
+            appendAgentMessage(
+              `<strong>${escapeHtml(parsed.movie.title)}</strong><br>${message}`,
+              "agent"
+            );
+
+
+          } else {
+
+            appendAgentMessage(
+              "No showtimes found for that movie.",
+              "agent"
+            );
+
+          }
+
+
+        } else {
+
+          appendAgentMessage(
+            "Please mention the movie title, for example: showtimes for Inception.",
+            "agent"
+          );
+
+        }
+
+
+        return;
+
+      }
+
+
+      /*
+        PARSE BOOKING COMMAND
+      */
+
+      const parsed =
+        parseCommand(text);
+
+
+      const movie =
+        parsed.movie;
+
+
+      const showtime =
+        parsed.showtime;
+
+
+      const numSeats =
+        parsed.numSeats;
+
+
+      if (!movie) {
+
+        appendAgentMessage(
+          "Sorry — I could not identify the movie. Try using the exact movie title.",
+          "agent"
+        );
+
+        return;
+
+      }
+
+
+      if (!showtime) {
+
+        appendAgentMessage(
+          "No showtimes are available for that movie.",
+          "agent"
+        );
+
+        return;
+
+      }
+
+
+      /*
+        SET STATE
+      */
+
+      state.selectedMovie =
+        movie;
+
+
+      state.selectedShowtime =
+        showtime;
+
+
+      state.pricePerTicket =
+        parseFloat(
+          showtime.price || 0
+        );
+
+
+      state.selectedSeats =
+        new Set();
+
+
+      updateSummary();
+
+
+      /*
+        LOAD SEATS
+      */
+
+      const showtimeId =
+        showtime.id;
+
+
+      if (
+        !SEATS_CACHE[showtimeId]
+      ) {
+
+        try {
+
+          const response =
+            await fetch(
+              `${API}/seats/${showtimeId}`
+            );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "HTTP " +
+              response.status
+            );
+
+          }
+
+
+          SEATS_CACHE[
+            showtimeId
+          ] =
+            await response.json();
+
+
+        } catch (error) {
+
+          console.error(
+            "AI seat loading:",
+            error
+          );
+
+
+          SEATS_CACHE[
+            showtimeId
+          ] = [];
+
+
+          appendAgentMessage(
+            "Unable to load seats from the backend.",
+            "agent"
+          );
+
+
+          return;
+
+        }
+
+      }
+
+
+      /*
+        AVAILABLE SEATS
+      */
+
+      const seats =
+        SEATS_CACHE[
+          showtimeId
+        ] || [];
+
+
+      const freeSeats =
+        seats
+          .filter(
+            seat =>
+              !seat.is_reserved
+          )
+          .slice(
+            0,
+            numSeats
+          );
+
+
+      if (
+        freeSeats.length <
+        numSeats
+      ) {
+
+        appendAgentMessage(
+          `Only ${freeSeats.length} free seat(s) are available, but you requested ${numSeats}.`,
+          "agent"
+        );
+
+
+        return;
+
+      }
+
+
+      /*
+        AUTO SELECT
+      */
+
+      freeSeats.forEach(
+        seat => {
+
+          state.selectedSeats.add(
+            seat.id
+          );
+
+        }
+      );
+
+
+      updateSummary();
+
+
+      renderSeatMap(
+        seats
+      );
+
+
+      const labels =
+        freeSeats.map(
+          seat =>
+            String(
+              seat.seat_row || ""
+            ) +
+            String(
+              seat.seat_number || ""
+            )
+        );
+
+
+      const showDate =
+        new Date(
+          showtime.start_time
+        );
+
+
+      const formattedShow =
+        isNaN(
+          showDate.getTime()
+        )
+          ? showtime.start_time
+          : showDate.toLocaleString();
+
+
+      appendAgentMessage(
+        `Auto-selected ${freeSeats.length} seat(s): <strong>${labels.join(", ")}</strong> for <strong>${escapeHtml(movie.title)}</strong> at ${formattedShow}. Proceeding to reserve and finalize...`,
+        "agent"
+      );
+
+
+      /*
+        UX DELAY
+      */
+
+      await sleep(600);
+
+
+      /*
+        RESERVE
+      */
+
+      try {
+
+        const seatIds =
+          Array.from(
+            state.selectedSeats
+          );
+
+
+        const response =
+          await fetch(
+            API + "/reserve",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                showtimeId:
+                  showtimeId,
+
+                showtime_id:
+                  showtimeId,
+
+                seatIds:
+                  seatIds,
+
+                seat_ids:
+                  seatIds
+
+              })
+
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          appendAgentMessage(
+            "Reserve failed: " +
+            (
+              result.message ||
+              result.error ||
+              "Unknown error"
+            ),
+            "agent"
+          );
+
+
+          return;
+
+        }
+
+
+      } catch (error) {
+
+        appendAgentMessage(
+          "Reserve error: " +
+          error.message,
+          "agent"
+        );
+
+
+        return;
+
+      }
+
+
+      /*
+        CUSTOMER DETAILS
+      */
+
+      const name =
+        prompt(
+          "Enter name for booking (auto-book):",
+          "Guest User"
+        ) || "Guest User";
+
+
+      const email =
+        prompt(
+          "Enter email (optional):",
+          ""
+        ) || "";
+
+
+      /*
+        FINALIZE
+      */
+
+      try {
+
+        const seatIds =
+          Array.from(
+            state.selectedSeats
+          );
+
+
+        const response =
+          await fetch(
+            API + "/finalize",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                user_name:
+                  name,
+
+                user_email:
+                  email,
+
+                showtime_id:
+                  showtimeId,
+
+                showtimeId:
+                  showtimeId,
+
+                seat_ids:
+                  seatIds,
+
+                seatIds:
+                  seatIds
+
+              })
+
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          appendAgentMessage(
+            "Finalize failed: " +
+            (
+              result.message ||
+              result.error ||
+              "Unknown error"
+            ),
+            "agent"
+          );
+
+
+          return;
+
+        }
+
+
+        /*
+          BOOKING DATA
+        */
+
+        const bookingId =
+          result.booking &&
+          result.booking.bookingId
+            ? result.booking.bookingId
+            : "BK" + Date.now();
+
+
+        const amount =
+          result.booking &&
+          result.booking.amount != null
+            ? result.booking.amount
+            : (
+                seatIds.length *
+                (
+                  state.pricePerTicket ||
+                  0
+                )
+              );
+
+
+        lastBooking = {
+
+          booking: {
+
+            bookingId:
+              bookingId,
+
+            amount:
+              amount
+
+          },
+
+          name:
+            name,
+
+          email:
+            email,
+
+          movie:
+            state.selectedMovie,
+
+          showtime:
+            state.selectedShowtime,
+
+          seats:
+            seatIds,
+
+          seatLabels:
+            labels
+
+        };
+
+
+        /*
+          MARK SEATS
+        */
+
+        if (
+          SEATS_CACHE[showtimeId]
+        ) {
+
+          SEATS_CACHE[showtimeId]
+            .forEach(
+              seat => {
+
+                if (
+                  seatIds.includes(
+                    seat.id
+                  )
+                ) {
+
+                  seat.is_reserved =
+                    true;
+
+                }
+
+              }
+            );
+
+        }
+
+
+        appendAgentMessage(
+          `🎉 Booking confirmed — ID <strong>${escapeHtml(bookingId)}</strong>. Generating ticket...`,
+          "agent"
+        );
+
+
+        /*
+          GENERATE PDF
+        */
+
+        await generateTicketPDF();
+
+
+        appendAgentMessage(
+          "Ticket downloaded. Enjoy the show!",
+          "agent"
+        );
+
+
+        /*
+          CLEAR SELECTION
+        */
+
+        state.selectedSeats =
+          new Set();
+
+
+        updateSummary();
+
+
+        renderSeatMap(
+          SEATS_CACHE[showtimeId]
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Finalize error:",
+          error
+        );
+
+
+        appendAgentMessage(
+          "Finalize error: " +
+          error.message,
+          "agent"
+        );
+
+      }
+
+    }
+
+
+    /* =========================================================
+       CHAT UI HELPER
+    ========================================================== */
+
+    function appendAgentMessage(
+      text,
+      who = "agent"
+    ) {
+
+      const log =
+        $id("chatLog");
+
+
+      const div =
+        document.createElement(
+          "div"
+        );
+
+
+      div.className =
+        "bubble " +
+        (
+          who === "user"
+            ? "user"
+            : "agent"
+        );
+
+
+      /*
+        Allow basic HTML because
+        some agent messages contain
+        <strong> and <br>.
+      */
+
+      div.innerHTML =
+        String(text)
+          .replace(
+            /\n/g,
+            "<br>"
+          );
+
+
+      log.appendChild(
+        div
+      );
+
+
+      log.scrollTop =
+        log.scrollHeight;
+
+    }
+
+
+    /* =========================================================
+       FOCUS CHAT
+    ========================================================== */
+
+    function openAgentFocus() {
+
+      $id(
+        "chatInput"
+      ).focus();
+
+    }
+
+
+    /* =========================================================
+       PDF TICKET GENERATOR
+    ========================================================== */
+
+    async function generateTicketPDF() {
+
+      if (!lastBooking) {
+
+        console.error(
+          "No booking available for PDF."
+        );
+
+        return;
+
+      }
+
+
+      /*
+        Check jsPDF
+      */
+
+      if (
+        !window.jspdf ||
+        !window.jspdf.jsPDF
+      ) {
+
+        alert(
+          "jsPDF library is not loaded."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        jsPDF
+      } =
+        window.jspdf;
+
+
+      /*
+        Create A4 PDF
+      */
+
+      const doc =
+        new jsPDF({
+
+          orientation:
+            "portrait",
+
+          unit:
+            "pt",
+
+          format:
+            "a4"
+
+        });
+
+
+      const pageWidth =
+        doc.internal.pageSize
+          .getWidth();
+
+
+      const pageHeight =
+        doc.internal.pageSize
+          .getHeight();
+
+
+      const centerX =
+        pageWidth / 2;
+
+
+      /* =====================================================
+         BACKGROUND
+      ====================================================== */
+
+      doc.setFillColor(
+        8,
+        12,
+        20
+      );
+
+
+      doc.rect(
+        0,
+        0,
+        pageWidth,
+        pageHeight,
+        "F"
+      );
+
+
+      /* =====================================================
+         HEADER
+      ====================================================== */
+
+      doc.setFillColor(
+        255,
+        77,
+        90
+      );
+
+
+      doc.roundedRect(
+
+        40,
+
+        40,
+
+        pageWidth - 80,
+
+        90,
+
+        12,
+
+        12,
+
+        "F"
+
+      );
+
+
+      doc.setFont(
+        "helvetica",
+        "bold"
+      );
+
+
+      doc.setFontSize(
+        28
+      );
+
+
+      doc.setTextColor(
+        255,
+        255,
+        255
+      );
+
+
+      doc.text(
+
+        "AGENTIC CINEMA",
+
+        centerX,
+
+        78,
+
+        {
+          align: "center"
+        }
+
+      );
+
+
+      doc.setFontSize(
+        13
+      );
+
+
+      doc.text(
+
+        "AI AUTO BOOKING TICKET",
+
+        centerX,
+
+        102,
+
+        {
+          align: "center"
+        }
+
+      );
+
+
+      /* =====================================================
+         MAIN TICKET CONTAINER
+      ====================================================== */
+
+      doc.setFillColor(
+        18,
+        24,
+        35
+      );
+
+
+      doc.roundedRect(
+
+        40,
+
+        160,
+
+        pageWidth - 80,
+
+        430,
+
+        16,
+
+        16,
+
+        "F"
+
+      );
+
+
+      /* =====================================================
+         MOVIE TITLE
+      ====================================================== */
+
+      doc.setTextColor(
+        255,
+        77,
+        90
+      );
+
+
+      doc.setFontSize(
+        26
+      );
+
+
+      const movieTitle =
+        String(
+          lastBooking.movie?.title ||
+          "Movie"
+        );
+
+
+      /*
+        splitTextToSize prevents
+        long movie names from
+        overflowing.
+      */
+
+      const movieTitleLines =
+        doc.splitTextToSize(
+          movieTitle,
+          pageWidth - 280
+        );
+
+
+      doc.text(
+
+        movieTitleLines,
+
+        60,
+
+        215
+
+      );
+
+
+      /* =====================================================
+         DETAILS
+      ====================================================== */
+
+      doc.setFontSize(
+        14
+      );
+
+
+      let y =
+        270;
+
+
+      const showDate =
+        new Date(
+          lastBooking.showtime?.start_time
+        );
+
+
+      const showTime =
+        isNaN(
+          showDate.getTime()
+        )
+          ? String(
+              lastBooking.showtime?.start_time ||
+              "N/A"
+            )
+          : showDate.toLocaleString();
+
+
+      const seatText =
+        lastBooking.seatLabels &&
+        lastBooking.seatLabels.length
+          ? lastBooking.seatLabels.join(
+              ", "
+            )
+          : (
+              lastBooking.seats || []
+            ).join(", ");
+
+
+      const details = [
+
+        [
+          "Booking ID",
+          lastBooking.booking?.bookingId ||
+          "N/A"
+        ],
+
+        [
+          "Customer",
+          lastBooking.name ||
+          "Guest User"
+        ],
+
+        [
+          "Email",
+          lastBooking.email ||
+          "N/A"
+        ],
+
+        [
+          "Show Time",
+          showTime
+        ],
+
+        [
+          "Seats",
+          seatText ||
+          "N/A"
+        ],
+
+        [
+          "Amount Paid",
+          fmtMoney(
+            lastBooking.booking?.amount
+          )
+        ]
+
+      ];
+
+
+      details.forEach(
+        item => {
+
+          const label =
+            String(
+              item[0]
+            );
+
+
+          const value =
+            String(
+              item[1]
+            );
+
+
+          /*
+            LABEL
+          */
+
+          doc.setTextColor(
+            170,
+            170,
+            170
+          );
+
+
+          doc.text(
+
+            label + ":",
+
+            60,
+
+            y
+
+          );
+
+
+          /*
+            VALUE
+          */
+
+          doc.setTextColor(
+            255,
+            255,
+            255
+          );
+
+
+          const valueLines =
+            doc.splitTextToSize(
+              value,
+              260
+            );
+
+
+          doc.text(
+
+            valueLines,
+
+            210,
+
+            y
+
+          );
+
+
+          y +=
+            45 +
+            (
+              Math.max(
+                0,
+                valueLines.length - 1
+              ) * 15
+            );
+
+        }
+      );
+
+
+      /* =====================================================
+         QR CODE STYLE BOX
+      ====================================================== */
+
+      const qrX =
+        pageWidth - 180;
+
+
+      const qrY =
+        400;
+
+
+      doc.setFillColor(
+        255,
+        255,
+        255
+      );
+
+
+      doc.roundedRect(
+
+        qrX,
+
+        qrY,
+
+        100,
+
+        100,
+
+        8,
+
+        8,
+
+        "F"
+
+      );
+
+
+      /*
+        Fake QR design for demo.
+        This is NOT a real QR code.
+      */
+
+      doc.setFillColor(
+        0,
+        0,
+        0
+      );
+
+
+      /*
+        Deterministic pattern instead
+        of Math.random(), so each
+        ticket is visually stable.
+      */
+
+      for (
+        let i = 0;
+        i < 8;
+        i++
+      ) {
+
+        for (
+          let j = 0;
+          j < 8;
+          j++
+        ) {
+
+          const shouldDraw =
+            (
+              (
+                i * 13 +
+                j * 7 +
+                String(
+                  lastBooking.booking?.bookingId ||
+                  ""
+                ).length
+              ) % 3
+            ) !== 0;
+
+
+          if (
+            shouldDraw
+          ) {
+
+            doc.rect(
+
+              qrX + 10 + i * 10,
+
+              qrY + 10 + j * 10,
+
+              6,
+
+              6,
+
+              "F"
+
+            );
+
+          }
+
+        }
+
+      }
+
+
+      /*
+        QR corner markers
+      */
+
+      drawQrCorner(
+        doc,
+        qrX + 8,
+        qrY + 8
+      );
+
+
+      drawQrCorner(
+        doc,
+        qrX + 62,
+        qrY + 8
+      );
+
+
+      drawQrCorner(
+        doc,
+        qrX + 8,
+        qrY + 62
+      );
+
+
+      /* =====================================================
+         FOOTER LINE
+      ====================================================== */
+
+      doc.setDrawColor(
+        255,
+        77,
+        90
+      );
+
+
+      doc.setLineWidth(
+        1
+      );
+
+
+      doc.line(
+
+        40,
+
+        640,
+
+        pageWidth - 40,
+
+        640
+
+      );
+
+
+      /* =====================================================
+         FOOTER TEXT
+      ====================================================== */
+
+      doc.setTextColor(
+        180,
+        180,
+        180
+      );
+
+
+      doc.setFontSize(
+        11
+      );
+
+
+      doc.text(
+
+        "Please show this ticket at cinema entry",
+
+        centerX,
+
+        675,
+
+        {
+          align: "center"
+        }
+
+      );
+
+
+      doc.text(
+
+        "Powered by Agentic AI Booking System",
+
+        centerX,
+
+        695,
+
+        {
+          align: "center"
+        }
+
+      );
+
+
+      doc.text(
+
+        "Demo Project • Mock Payment",
+
+        centerX,
+
+        715,
+
+        {
+          align: "center"
+        }
+
+      );
+
+
+      /* =====================================================
+         SAVE PDF
+      ====================================================== */
+
+      const bookingId =
+        String(
+          lastBooking.booking?.bookingId ||
+          Date.now()
+        )
+          .replace(
+            /[^a-zA-Z0-9_-]/g,
+            "_"
+          );
+
+
+      doc.save(
+        `AgenticCinema_${bookingId}.pdf`
+      );
+
+    }
+
+
+    /* =========================================================
+       DRAW QR CORNER
+    ========================================================== */
+
+    function drawQrCorner(
+      doc,
+      x,
+      y
+    ) {
+
+      doc.setFillColor(
+        0,
+        0,
+        0
+      );
+
+
+      doc.rect(
+        x,
+        y,
+        30,
+        30,
+        "F"
+      );
+
+
+      doc.setFillColor(
+        255,
+        255,
+        255
+      );
+
+
+      doc.rect(
+        x + 6,
+        y + 6,
+        18,
+        18,
+        "F"
+      );
+
+
+      doc.setFillColor(
+        0,
+        0,
+        0
+      );
+
+
+      doc.rect(
+        x + 11,
+        y + 11,
+        8,
+        8,
+        "F"
+      );
+
+    }
+
+    /* =========================================================
+       MODAL CLICK OUTSIDE
+    ========================================================== */
+
+    $id(
+      "seatModalBg"
+    ).addEventListener(
+      "click",
+      function(event) {
+
+        if (
+          event.target ===
+          this
+        ) {
+
+          closeSeatModal();
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       ESC KEY
+    ========================================================== */
+
+    document.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Escape"
+        ) {
+
+          closeSeatModal();
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       EXPOSE FUNCTIONS
+       FOR INLINE HTML BUTTONS
+    ========================================================== */
+
+    window.openSeatModal =
+      openSeatModal;
+
+
+    window.closeSeatModal =
+      closeSeatModal;
+
+
+    window.reserveNow =
+      reserveNow;
+
+
+    window.oneClickBook =
+      oneClickBook;
+
+
+    window.startBooking =
+      startBooking;
+
+
+    window.showTimes =
+      showTimes;
+
+
+    window.sendChat =
+      sendChat;
+
+
+    window.filterMovies =
+      filterMovies;
+
+
+    window.openAgentFocus =
+      openAgentFocus;
+
+
+  </script>
+
+</body>
+
+</html>
